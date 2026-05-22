@@ -1,9 +1,9 @@
-export type AccountStatus = "Live" | "Paused" | "Review";
+export type AccountStatus = "Active" | "Review" | "Paused";
 export type RiskLevel = "Low" | "Medium" | "High";
-export type OrderSide = "Buy" | "Sell";
-export type OrderState = "Filled" | "Working" | "Rejected";
-export type RpaAction = "refresh_positions" | "sync_orders" | "export_statement";
-export type RpaStatus = "Queued" | "Running" | "Completed" | "Blocked" | "Failed";
+export type SortDirection = "asc" | "desc";
+export type ServerStatus = "Online" | "Degraded" | "Offline";
+export type LogLevel = "info" | "warning" | "error";
+export type ProfileVariant = "A" | "B";
 
 export interface Account {
   id: string;
@@ -15,123 +15,126 @@ export interface Account {
   exposure: number;
   dailyPnl: number;
   riskLevel: RiskLevel;
-  activeOrders: number;
+  activeTickets: number;
 }
 
-export interface Position {
+export interface Holding {
+  id: string;
+  accountId: string;
   symbol: string;
   name: string;
   market: string;
   quantity: number;
   avgCost: number;
   last: number;
-  dayPnl: number;
   exposure: number;
-  strategy: string;
+  dayPnl: number;
+  profile: ProfileVariant;
 }
 
-export interface RiskEvent {
-  id: string;
-  level: RiskLevel;
-  title: string;
-  owner: string;
-  createdAt: string;
-  detail: string;
-}
-
-export interface ExecutionEvent {
-  time: string;
-  account: string;
+export interface GroupedHolding {
   symbol: string;
-  side: OrderSide;
+  name: string;
+  market: string;
+  accounts: number;
   quantity: number;
-  state: OrderState;
-  note: string;
+  exposure: number;
+  dayPnl: number;
+  profiles: ProfileVariant[];
 }
 
-export interface StrategyControl {
+export interface StrategyProfile {
+  id: string;
+  label: string;
+  variant: ProfileVariant;
+  maxSingleNameExposure: number;
+  rebalanceWindow: string;
+  alertsEnabled: boolean;
+  notes: string;
+}
+
+export interface OpsLog {
+  id: string;
+  level: LogLevel;
+  source: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface ServerStatusCard {
   id: string;
   name: string;
-  mode: "Auto" | "Manual";
-  guardrail: string;
-  enabled: boolean;
-}
-
-export interface RpaCommand {
-  id: string;
-  accountId: string;
-  action: RpaAction;
-  status: RpaStatus;
-  createdAt: string;
-  operator: string;
-  message: string;
-  steps: string[];
-  progress: number;
-  currentStep: string;
-  artifactUrl: string;
-  logs: string[];
+  region: string;
+  status: ServerStatus;
+  latencyMs: number;
+  queueDepth: number;
+  lastHeartbeat: string;
 }
 
 export interface DashboardPayload {
-  asOf?: string;
-  currency: string;
-  summary?: {
-    totalEquity: number;
-    totalCash: number;
-    totalPnl: number;
-    activeOrders: number;
-    averageExposure: number;
-    riskItems: number;
-  };
+  asOf: string;
   accounts: Account[];
-  positions: Position[];
-  riskEvents: RiskEvent[];
-  executions: ExecutionEvent[];
-  strategies: StrategyControl[];
-  rpaCommands?: RpaCommand[];
+  holdings: Holding[];
+  strategies: StrategyProfile[];
+  logs: OpsLog[];
+  servers: ServerStatusCard[];
 }
 
-export const accounts: Account[] = [
+export const demoAccounts: Account[] = [
   {
-    id: "SG-ALPHA",
+    id: "OPS-001",
     name: "Alpha Growth",
-    desk: "Cash Equity",
-    status: "Live",
+    desk: "Equity Ops",
+    status: "Active",
     equity: 1268400,
     cash: 284600,
     exposure: 78,
     dailyPnl: 18420,
     riskLevel: "Low",
-    activeOrders: 6
+    activeTickets: 6
   },
   {
-    id: "SG-BETA",
+    id: "OPS-002",
     name: "Beta Income",
-    desk: "Credit Portfolio",
+    desk: "Portfolio Ops",
     status: "Review",
     equity: 842300,
     cash: 103900,
     exposure: 84,
     dailyPnl: -4260,
     riskLevel: "Medium",
-    activeOrders: 3
+    activeTickets: 3
   },
   {
-    id: "HK-DELTA",
+    id: "OPS-003",
     name: "Delta Tactical",
-    desk: "Regional Basket",
+    desk: "Regional Ops",
     status: "Paused",
     equity: 673200,
     cash: 219400,
     exposure: 61,
     dailyPnl: 3920,
     riskLevel: "Low",
-    activeOrders: 0
+    activeTickets: 0
+  },
+  {
+    id: "OPS-004",
+    name: "Gamma Balanced",
+    desk: "ETF Ops",
+    status: "Active",
+    equity: 934800,
+    cash: 171250,
+    exposure: 72,
+    dailyPnl: 6840,
+    riskLevel: "Low",
+    activeTickets: 4
   }
 ];
 
-export const positions: Position[] = [
+export const demoHoldings: Holding[] = [
   {
+    id: "H-1001",
+    accountId: "OPS-001",
     symbol: "D05.SI",
     name: "DBS Group",
     market: "SGX",
@@ -140,9 +143,24 @@ export const positions: Position[] = [
     last: 39.46,
     dayPnl: 10988,
     exposure: 323572,
-    strategy: "Momentum Guard"
+    profile: "A"
   },
   {
+    id: "H-1002",
+    accountId: "OPS-002",
+    symbol: "D05.SI",
+    name: "DBS Group",
+    market: "SGX",
+    quantity: 3300,
+    avgCost: 38.02,
+    last: 39.46,
+    dayPnl: 4752,
+    exposure: 130218,
+    profile: "B"
+  },
+  {
+    id: "H-1003",
+    accountId: "OPS-001",
     symbol: "O39.SI",
     name: "OCBC Bank",
     market: "SGX",
@@ -151,20 +169,24 @@ export const positions: Position[] = [
     last: 14.72,
     dayPnl: -3116,
     exposure: 241408,
-    strategy: "Mean Reversion"
+    profile: "A"
   },
   {
+    id: "H-1004",
+    accountId: "OPS-003",
     symbol: "0700.HK",
-    name: "Tencent",
+    name: "Tencent Holdings",
     market: "HKEX",
     quantity: 2400,
     avgCost: 365.2,
     last: 372.4,
     dayPnl: 17280,
     exposure: 893760,
-    strategy: "Breakout Ladder"
+    profile: "B"
   },
   {
+    id: "H-1005",
+    accountId: "OPS-004",
     symbol: "AAPL",
     name: "Apple",
     market: "NASDAQ",
@@ -173,123 +195,110 @@ export const positions: Position[] = [
     last: 185.9,
     dayPnl: -1470,
     exposure: 182182,
-    strategy: "US Overlay"
+    profile: "A"
+  },
+  {
+    id: "H-1006",
+    accountId: "OPS-004",
+    symbol: "SPY",
+    name: "S&P 500 ETF",
+    market: "NYSE Arca",
+    quantity: 510,
+    avgCost: 521.8,
+    last: 526.3,
+    dayPnl: 2295,
+    exposure: 268413,
+    profile: "B"
   }
 ];
 
-export const riskEvents: RiskEvent[] = [
+export const demoStrategies: StrategyProfile[] = [
   {
-    id: "R-1042",
-    level: "Medium",
-    title: "Exposure threshold approaching",
-    owner: "Ops Lead",
-    createdAt: "09:42",
-    detail: "Beta Income is within 6% of the configured exposure cap."
+    id: "strategy-a",
+    label: "Profile A",
+    variant: "A",
+    maxSingleNameExposure: 18,
+    rebalanceWindow: "09:30-11:30",
+    alertsEnabled: true,
+    notes: "Conservative review settings for high-liquidity holdings."
   },
   {
-    id: "R-1039",
-    level: "Low",
-    title: "Stale quote recovered",
-    owner: "System",
-    createdAt: "09:18",
-    detail: "HKEX market data feed recovered after one delayed tick."
-  },
-  {
-    id: "R-1031",
-    level: "High",
-    title: "Manual approval required",
-    owner: "Trader",
-    createdAt: "08:57",
-    detail: "One sell order exceeded the standard participation guardrail."
+    id: "strategy-b",
+    label: "Profile B",
+    variant: "B",
+    maxSingleNameExposure: 24,
+    rebalanceWindow: "13:00-15:00",
+    alertsEnabled: true,
+    notes: "Wider tolerance used for demo comparison workflows."
   }
 ];
 
-export const executions: ExecutionEvent[] = [
+export const demoServers: ServerStatusCard[] = [
   {
-    time: "10:14:23",
-    account: "Alpha Growth",
-    symbol: "D05.SI",
-    side: "Sell",
-    quantity: 1200,
-    state: "Filled",
-    note: "Target trim completed"
+    id: "mock-api",
+    name: "Mock REST API",
+    region: "Local demo",
+    status: "Online",
+    latencyMs: 42,
+    queueDepth: 2,
+    lastHeartbeat: "10:18:24"
   },
   {
-    time: "10:09:11",
-    account: "Beta Income",
-    symbol: "O39.SI",
-    side: "Buy",
-    quantity: 2400,
-    state: "Working",
-    note: "Limit order inside spread"
+    id: "cache",
+    name: "Browser Cache",
+    region: "LocalStorage",
+    status: "Online",
+    latencyMs: 4,
+    queueDepth: 0,
+    lastHeartbeat: "10:18:21"
   },
   {
-    time: "09:58:44",
-    account: "Delta Tactical",
-    symbol: "0700.HK",
-    side: "Sell",
-    quantity: 600,
-    state: "Rejected",
-    note: "Paused account protection"
-  },
-  {
-    time: "09:41:02",
-    account: "Alpha Growth",
-    symbol: "AAPL",
-    side: "Buy",
-    quantity: 180,
-    state: "Filled",
-    note: "US overlay rebalance"
+    id: "ops-feed",
+    name: "Mock Ops Feed",
+    region: "Simulated",
+    status: "Degraded",
+    latencyMs: 168,
+    queueDepth: 7,
+    lastHeartbeat: "10:17:58"
   }
 ];
 
-export const strategyControls: StrategyControl[] = [
+export const demoLogs: OpsLog[] = [
   {
-    id: "momentum",
-    name: "Momentum Guard",
-    mode: "Auto",
-    guardrail: "Max 18% single-name exposure",
-    enabled: true
+    id: "LOG-1004",
+    level: "info",
+    source: "mock-api",
+    message: "Dashboard snapshot refreshed with sanitized portfolio data.",
+    timestamp: "10:18:24"
   },
   {
-    id: "reversion",
-    name: "Mean Reversion",
-    mode: "Auto",
-    guardrail: "Requires spread below 12 bps",
-    enabled: true
+    id: "LOG-1003",
+    level: "warning",
+    source: "ops-feed",
+    message: "Beta Income requires review because exposure is near its demo threshold.",
+    timestamp: "10:16:42"
   },
   {
-    id: "manual-review",
-    name: "Manual Review",
-    mode: "Manual",
-    guardrail: "Trader approval for exceptions",
-    enabled: false
-  }
-];
-
-export const rpaCommands: RpaCommand[] = [
+    id: "LOG-1002",
+    level: "info",
+    source: "cache",
+    message: "Strategy profile preferences restored from LocalStorage.",
+    timestamp: "10:12:08"
+  },
   {
-    id: "RPA-2401",
-    accountId: "SG-ALPHA",
-    action: "refresh_positions",
-    status: "Completed",
-    createdAt: "10:16:12",
-    operator: "System",
-    message: "Position refresh completed through the broker desktop workflow.",
-    steps: ["Focus broker window", "Open holdings tab", "Trigger refresh", "Read updated table"],
-    progress: 100,
-    currentStep: "Read updated table",
-    artifactUrl: "",
-    logs: ["10:16:12 Scheduler accepted command", "10:16:13 Completed holdings refresh"]
+    id: "LOG-1001",
+    level: "error",
+    source: "mock-api",
+    message: "One simulated status check returned a retryable timeout.",
+    timestamp: "10:08:55"
   }
 ];
 
 export const fallbackDashboard: DashboardPayload = {
-  currency: "SGD",
-  accounts,
-  positions,
-  riskEvents,
-  executions,
-  strategies: strategyControls,
-  rpaCommands
+  asOf: new Date().toISOString(),
+  accounts: demoAccounts,
+  holdings: demoHoldings,
+  strategies: demoStrategies,
+  logs: demoLogs,
+  servers: demoServers
 };

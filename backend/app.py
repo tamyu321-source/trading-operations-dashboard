@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request
 
 from .services import TradingOperationsService
 
@@ -28,44 +28,25 @@ def create_app() -> Flask:
     def accounts():
         return jsonify({"data": service.accounts(request.args.get("status"))})
 
-    @app.get("/api/risk-events")
-    def risk_events():
-        return jsonify({"data": service.risk_events(request.args.get("level"))})
+    @app.get("/api/holdings")
+    def holdings():
+        return jsonify({"data": service.holdings(request.args.get("accountId"))})
 
-    @app.post("/api/strategies/<strategy_id>/toggle")
-    def toggle_strategy(strategy_id: str):
+    @app.post("/api/strategies/<strategy_id>")
+    def update_strategy(strategy_id: str):
         payload = request.get_json(silent=True) or {}
-        enabled = bool(payload.get("enabled"))
         try:
-            return jsonify({"data": service.toggle_strategy(strategy_id, enabled)})
+            return jsonify({"data": service.update_strategy(strategy_id, payload)})
         except KeyError:
             return jsonify({"error": f"Strategy '{strategy_id}' was not found"}), 404
 
-    @app.get("/api/rpa/commands")
-    def rpa_commands():
-        return jsonify({"data": service.rpa_commands()})
+    @app.get("/api/logs")
+    def logs():
+        return jsonify({"data": service.logs()})
 
-    @app.post("/api/rpa/commands")
-    def submit_rpa_command():
-        payload = request.get_json(silent=True) or {}
-        try:
-            command = service.submit_rpa_command(
-                account_id=str(payload.get("accountId", "")),
-                action=str(payload.get("action", "")),
-                operator=str(payload.get("operator") or "Portfolio Reviewer"),
-            )
-            return jsonify({"data": command}), 201
-        except KeyError:
-            return jsonify({"error": "Account was not found"}), 404
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
-
-    @app.get("/api/rpa/artifacts/<filename>")
-    def rpa_artifact(filename: str):
-        try:
-            return send_file(service.artifact_path(filename), as_attachment=True)
-        except FileNotFoundError:
-            return jsonify({"error": "Artifact was not found"}), 404
+    @app.get("/api/servers")
+    def servers():
+        return jsonify({"data": service.servers()})
 
     return app
 

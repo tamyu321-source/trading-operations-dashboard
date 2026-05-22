@@ -4,12 +4,11 @@ from dataclasses import asdict, dataclass
 from typing import Literal
 
 
-AccountStatus = Literal["Live", "Paused", "Review"]
+AccountStatus = Literal["Active", "Paused", "Review"]
 RiskLevel = Literal["Low", "Medium", "High"]
-OrderSide = Literal["Buy", "Sell"]
-OrderState = Literal["Filled", "Working", "Rejected"]
-RpaAction = Literal["refresh_positions", "sync_orders", "export_statement"]
-RpaStatus = Literal["Queued", "Running", "Completed", "Blocked", "Failed"]
+ProfileVariant = Literal["A", "B"]
+ServerStatus = Literal["Online", "Degraded", "Offline"]
+LogLevel = Literal["info", "warning", "error"]
 
 
 @dataclass(frozen=True)
@@ -23,83 +22,65 @@ class Account:
     exposure: int
     dailyPnl: float
     riskLevel: RiskLevel
-    activeOrders: int
+    activeTickets: int
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 @dataclass(frozen=True)
-class Position:
+class Holding:
+    id: str
+    accountId: str
     symbol: str
     name: str
     market: str
     quantity: int
     avgCost: float
     last: float
-    dayPnl: float
     exposure: float
-    strategy: str
+    dayPnl: float
+    profile: ProfileVariant
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 @dataclass(frozen=True)
-class RiskEvent:
+class StrategyProfile:
     id: str
-    level: RiskLevel
-    title: str
-    owner: str
-    createdAt: str
-    detail: str
+    label: str
+    variant: ProfileVariant
+    maxSingleNameExposure: int
+    rebalanceWindow: str
+    alertsEnabled: bool
+    notes: str
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 @dataclass(frozen=True)
-class ExecutionEvent:
-    time: str
-    account: str
-    symbol: str
-    side: OrderSide
-    quantity: int
-    state: OrderState
-    note: str
+class OpsLog:
+    id: str
+    level: LogLevel
+    source: str
+    message: str
+    timestamp: str
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 @dataclass(frozen=True)
-class StrategyControl:
+class ServerCard:
     id: str
     name: str
-    mode: Literal["Auto", "Manual"]
-    guardrail: str
-    enabled: bool
+    region: str
+    status: ServerStatus
+    latencyMs: int
+    queueDepth: int
+    lastHeartbeat: str
 
     def to_dict(self) -> dict:
         return asdict(self)
-
-
-@dataclass
-class RpaCommand:
-    id: str
-    accountId: str
-    action: RpaAction
-    status: RpaStatus
-    createdAt: str
-    operator: str
-    message: str
-    steps: list[str]
-    progress: int = 0
-    currentStep: str = ""
-    artifactUrl: str = ""
-    logs: list[str] | None = None
-
-    def to_dict(self) -> dict:
-        data = asdict(self)
-        data["logs"] = data["logs"] or []
-        return data
