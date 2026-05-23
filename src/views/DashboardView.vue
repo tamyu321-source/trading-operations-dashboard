@@ -13,6 +13,7 @@
         <a href="#accounts">{{ t.navAccounts }}</a>
         <a href="#holdings">{{ t.navHoldings }}</a>
         <a href="#strategy">{{ t.navProfiles }}</a>
+        <a href="#rpa">{{ t.navRpa }}</a>
         <a href="#logs">{{ t.navLogs }}</a>
       </nav>
 
@@ -44,7 +45,15 @@
                 type="button"
                 @click="locale = option.locale"
               >
-                <span class="flag" aria-hidden="true">{{ option.flag }}</span>
+                <span :class="['flag', option.flagClass]" aria-hidden="true">
+                  <span v-if="option.flagClass === 'flag-uk'" class="uk-cross"></span>
+                  <span v-if="option.flagClass === 'flag-cn'" class="cn-star main"></span>
+                  <span v-if="option.flagClass === 'flag-cn'" class="cn-star s1"></span>
+                  <span v-if="option.flagClass === 'flag-cn'" class="cn-star s2"></span>
+                  <span v-if="option.flagClass === 'flag-cn'" class="cn-star s3"></span>
+                  <span v-if="option.flagClass === 'flag-cn'" class="cn-star s4"></span>
+                  <span v-if="option.flagClass === 'flag-tw'" class="tw-canton"></span>
+                </span>
                 <span>{{ option.label }}</span>
               </button>
             </div>
@@ -274,6 +283,76 @@
           </div>
         </article>
       </section>
+
+      <section class="content-grid wide-left" id="rpa">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">{{ t.rpaEyebrow }}</p>
+              <h2>{{ t.rpaTitle }}</h2>
+            </div>
+            <span :class="['backend-status', store.rpaOnline ? 'online' : 'offline']">
+              {{ store.rpaOnline ? t.backendOnline : t.backendOffline }}
+            </span>
+          </div>
+
+          <div class="rpa-command-bar">
+            <label>
+              <span>{{ t.account }}</span>
+              <select v-model="store.selectedRpaAccountId">
+                <option v-for="account in store.accounts" :key="account.id" :value="account.id">
+                  {{ account.name }}
+                </option>
+              </select>
+            </label>
+            <label>
+              <span>{{ t.rpaAction }}</span>
+              <select v-model="store.selectedRpaAction">
+                <option value="refresh_holdings">{{ t.refreshHoldings }}</option>
+                <option value="reconcile_cash">{{ t.reconcileCash }}</option>
+                <option value="generate_report">{{ t.generateReport }}</option>
+              </select>
+            </label>
+            <button class="primary-button" :disabled="store.rpaBusy" @click="store.submitRpaJob">
+              {{ store.rpaBusy ? t.submitting : t.submitRpa }}
+            </button>
+            <button class="secondary-button" @click="store.refreshRpaJobs">{{ t.refreshJobs }}</button>
+          </div>
+
+          <p class="rpa-note">{{ t.rpaNote }}</p>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">{{ t.rpaAudit }}</p>
+              <h2>{{ t.rpaJobs }}</h2>
+            </div>
+          </div>
+
+          <div v-if="store.rpaJobs.length === 0" class="empty-state">{{ t.noRpaJobs }}</div>
+          <div v-else class="rpa-job-list">
+            <article v-for="job in store.rpaJobs" :key="job.id" class="rpa-job">
+              <div>
+                <strong>{{ job.id }} / {{ rpaActionLabel(job.action) }}</strong>
+                <small>{{ job.accountId }} / {{ job.createdAt }} / {{ job.operator }}</small>
+              </div>
+              <span :class="['rpa-status', job.status.toLowerCase()]">{{ rpaStatusLabel(job.status) }}</span>
+              <p>{{ job.message }}</p>
+              <div class="rpa-progress" :aria-label="`${job.progress}%`">
+                <span :style="{ width: `${job.progress}%` }"></span>
+              </div>
+              <small class="rpa-step">{{ job.currentStep }}</small>
+              <div class="rpa-logs">
+                <code v-for="line in job.logs" :key="line">{{ line }}</code>
+              </div>
+              <a v-if="job.artifactUrl" class="artifact-link" :href="job.artifactUrl" target="_blank">
+                {{ t.openArtifact }}
+              </a>
+            </article>
+          </div>
+        </article>
+      </section>
     </section>
 
     <div v-if="editingProfile" class="modal-backdrop" role="presentation" @click.self="editingProfile = null">
@@ -315,14 +394,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useDashboardStore } from "../stores/dashboard";
-import type { AccountStatus, Holding, ProfileVariant, RiskLevel, StrategyProfile } from "../data";
+import type { AccountStatus, Holding, ProfileVariant, RiskLevel, RpaAction, RpaStatus, StrategyProfile } from "../data";
 
 type Locale = "en" | "zhHans" | "zhHant";
 
-const languageOptions: { locale: Locale; flag: string; label: string }[] = [
-  { locale: "en", flag: "🇬🇧", label: "English" },
-  { locale: "zhHans", flag: "🇨🇳", label: "简体中文" },
-  { locale: "zhHant", flag: "🇹🇼", label: "繁體中文" }
+const languageOptions: { locale: Locale; flagClass: string; label: string }[] = [
+  { locale: "en", flagClass: "flag-uk", label: "English" },
+  { locale: "zhHans", flagClass: "flag-cn", label: "简体中文" },
+  { locale: "zhHant", flagClass: "flag-tw", label: "繁體中文" }
 ];
 
 const dictionaries = {
@@ -333,6 +412,7 @@ const dictionaries = {
     navAccounts: "Accounts",
     navHoldings: "Holdings",
     navProfiles: "Profiles",
+    navRpa: "RPA",
     navLogs: "Logs",
     adminKey: "Demo admin key",
     adminPlaceholder: "Stored locally",
@@ -408,6 +488,23 @@ const dictionaries = {
     demoNotes: "Demo notes",
     cancel: "Cancel",
     saveProfile: "Save profile",
+    rpaEyebrow: "Backend RPA orchestration",
+    rpaTitle: "Mock RPA Worker",
+    backendOnline: "Backend online",
+    backendOffline: "Backend offline",
+    rpaAction: "RPA action",
+    refreshHoldings: "Refresh holdings",
+    reconcileCash: "Reconcile cash",
+    generateReport: "Generate report",
+    submitting: "Submitting...",
+    submitRpa: "Submit job",
+    refreshJobs: "Refresh jobs",
+    rpaNote:
+      "This panel calls the Python backend. The backend queues a mock RPA job, runs it in a worker thread, streams status through polling, and writes a sanitized artifact.",
+    rpaAudit: "Backend audit trail",
+    rpaJobs: "RPA Jobs",
+    noRpaJobs: "No backend RPA jobs yet.",
+    openArtifact: "Open artifact",
     mockHeartbeat: "Simulated heartbeat received from local mock service.",
     mockReviewItem: "Manual review item added to the sanitized demo log."
   },
@@ -418,6 +515,7 @@ const dictionaries = {
     navAccounts: "账户",
     navHoldings: "持仓",
     navProfiles: "配置",
+    navRpa: "RPA",
     navLogs: "日志",
     adminKey: "演示管理员密钥",
     adminPlaceholder: "仅本地存储",
@@ -492,6 +590,22 @@ const dictionaries = {
     demoNotes: "演示备注",
     cancel: "取消",
     saveProfile: "保存配置",
+    rpaEyebrow: "后端 RPA 编排",
+    rpaTitle: "模拟 RPA Worker",
+    backendOnline: "后端在线",
+    backendOffline: "后端离线",
+    rpaAction: "RPA 动作",
+    refreshHoldings: "刷新持仓",
+    reconcileCash: "现金核对",
+    generateReport: "生成报告",
+    submitting: "提交中...",
+    submitRpa: "提交任务",
+    refreshJobs: "刷新任务",
+    rpaNote: "这个面板会调用 Python 后端。后端把模拟 RPA 任务放入队列，由 worker 线程推进状态，通过轮询展示进度，并写入脱敏产物。",
+    rpaAudit: "后端审计轨迹",
+    rpaJobs: "RPA 任务",
+    noRpaJobs: "暂无后端 RPA 任务。",
+    openArtifact: "打开产物",
     mockHeartbeat: "已收到本地模拟服务的心跳。",
     mockReviewItem: "已向脱敏演示日志添加人工复核事项。"
   },
@@ -502,6 +616,7 @@ const dictionaries = {
     navAccounts: "帳戶",
     navHoldings: "持倉",
     navProfiles: "配置",
+    navRpa: "RPA",
     navLogs: "日誌",
     adminKey: "展示管理員金鑰",
     adminPlaceholder: "僅本機儲存",
@@ -576,6 +691,22 @@ const dictionaries = {
     demoNotes: "展示備註",
     cancel: "取消",
     saveProfile: "儲存配置",
+    rpaEyebrow: "後端 RPA 編排",
+    rpaTitle: "模擬 RPA Worker",
+    backendOnline: "後端在線",
+    backendOffline: "後端離線",
+    rpaAction: "RPA 動作",
+    refreshHoldings: "刷新持倉",
+    reconcileCash: "現金核對",
+    generateReport: "產生報告",
+    submitting: "提交中...",
+    submitRpa: "提交任務",
+    refreshJobs: "刷新任務",
+    rpaNote: "這個面板會呼叫 Python 後端。後端把模擬 RPA 任務放入佇列，由 worker 執行緒推進狀態，透過輪詢展示進度，並寫入脫敏產物。",
+    rpaAudit: "後端稽核軌跡",
+    rpaJobs: "RPA 任務",
+    noRpaJobs: "暫無後端 RPA 任務。",
+    openArtifact: "開啟產物",
     mockHeartbeat: "已收到本機模擬服務的心跳。",
     mockReviewItem: "已向脫敏展示日誌新增人工覆核事項。"
   }
@@ -585,6 +716,7 @@ const store = useDashboardStore();
 const locale = ref<Locale>("en");
 const editingProfile = ref<StrategyProfile | null>(null);
 let logTimer: number | undefined;
+let rpaTimer: number | undefined;
 
 const t = computed(() => dictionaries[locale.value]);
 
@@ -603,10 +735,14 @@ onMounted(() => {
   logTimer = window.setInterval(() => {
     store.pushLog("info", "mock-feed", t.value.mockHeartbeat);
   }, 12000);
+  rpaTimer = window.setInterval(() => {
+    store.refreshRpaJobs();
+  }, 1200);
 });
 
 onUnmounted(() => {
   if (logTimer) window.clearInterval(logTimer);
+  if (rpaTimer) window.clearInterval(rpaTimer);
 });
 
 function openProfile(profile: StrategyProfile) {
@@ -643,6 +779,32 @@ function riskLevelLabel(level: RiskLevel) {
     High: t.value.high
   };
   return labels[level];
+}
+
+function rpaActionLabel(action: RpaAction) {
+  const labels = {
+    refresh_holdings: t.value.refreshHoldings,
+    reconcile_cash: t.value.reconcileCash,
+    generate_report: t.value.generateReport
+  };
+  return labels[action];
+}
+
+function rpaStatusLabel(status: RpaStatus) {
+  const labels = {
+    Queued: "Queued",
+    Running: "Running",
+    Completed: "Completed",
+    Blocked: "Blocked",
+    Failed: "Failed"
+  };
+  if (locale.value === "zhHans") {
+    return { Queued: "排队中", Running: "运行中", Completed: "已完成", Blocked: "已拦截", Failed: "失败" }[status];
+  }
+  if (locale.value === "zhHant") {
+    return { Queued: "排隊中", Running: "運行中", Completed: "已完成", Blocked: "已攔截", Failed: "失敗" }[status];
+  }
+  return labels[status];
 }
 
 function money(value: number) {

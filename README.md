@@ -18,6 +18,7 @@ Operations teams need a clear view of account health, portfolio exposure, profil
 - LocalStorage cache example for dashboard state and a demo-only admin key
 - Mock real-time operations log viewer
 - Multi-server status cards for local mock services
+- Backend mock RPA scheduler with queued jobs, worker progress, logs, and sanitized artifacts
 - Empty, loading, and error states
 - Clean internal-tool layout with tables, cards, filters, and modal controls
 
@@ -51,7 +52,7 @@ trading-operations-dashboard/
   index.html
 ```
 
-The frontend is the primary demo. It can run entirely in the browser with mock data and LocalStorage. The optional backend mirrors the public API shape for reviewers who want to inspect a simple full-stack boundary.
+The frontend can run with browser-only mock data and LocalStorage. The optional backend adds a stronger full-stack demonstration: a mock RPA job queue, background worker, status polling, progress logs, and generated sanitized artifacts.
 
 ## Mocked Or Removed
 
@@ -61,6 +62,7 @@ The frontend is the primary demo. It can run entirely in the browser with mock d
 - Order execution and account session automation are not included
 - Logs are sanitized and generated for demonstration only
 - The admin key input is stored locally for demo UI purposes only
+- RPA jobs are simulated backend workflows and do not contact external systems
 
 ## Screenshots
 
@@ -101,6 +103,8 @@ pip install -r backend/requirements.txt
 python -m backend.app
 ```
 
+If backend routes change during development, stop and restart `python -m backend.app` so Flask loads the new API surface. Vite proxies `/api/*` from the frontend dev server to `http://127.0.0.1:8000`.
+
 Run backend tests:
 
 ```bash
@@ -120,6 +124,21 @@ The optional backend exposes a sanitized mock API:
 | POST | `/api/strategies/<id>` | Update mock A/B profile configuration |
 | GET | `/api/logs` | Sanitized operations logs |
 | GET | `/api/servers` | Mock service status cards |
+| GET | `/api/rpa/jobs` | Mock RPA queue and audit trail |
+| POST | `/api/rpa/jobs` | Submit a sanitized mock RPA workflow |
+| GET | `/api/rpa/artifacts/<filename>` | Download a generated mock artifact |
+
+## Backend RPA Demo
+
+The backend includes a safe RPA-style scheduler to show orchestration ability without exposing private systems:
+
+- validates the selected demo account
+- accepts limited mock actions: refresh holdings, reconcile cash, generate report
+- enqueues jobs into an in-memory backend queue
+- advances jobs through `Queued`, `Running`, `Completed`, or `Blocked`
+- records progress, current step, and worker logs
+- writes JSON artifacts under `backend/artifacts/`
+- exposes polling endpoints consumed by the Vue dashboard
 
 ## Portfolio Notes
 

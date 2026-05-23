@@ -3,9 +3,11 @@ import { computed, ref } from "vue";
 import {
   clearDemoCache,
   fetchMockDashboard,
+  fetchBackendRpaJobs,
   getStoredAdminKey,
   saveStrategyProfile,
   setStoredAdminKey,
+  submitBackendRpaJob,
   updateHoldingProfile
 } from "../api";
 import {
@@ -16,6 +18,8 @@ import {
   type LogLevel,
   type ProfileVariant,
   type RiskLevel,
+  type RpaAction,
+  type RpaJob,
   type SortDirection,
   type StrategyProfile
 } from "../data";
@@ -32,6 +36,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
   const strategies = ref(fallbackDashboard.strategies.map((item) => ({ ...item })));
   const logs = ref([...fallbackDashboard.logs]);
   const servers = ref([...fallbackDashboard.servers]);
+  const rpaJobs = ref<RpaJob[]>([...(fallbackDashboard.rpaJobs || [])]);
+  const rpaOnline = ref(false);
+  const rpaBusy = ref(false);
+  const selectedRpaAccountId = ref(fallbackDashboard.accounts[0].id);
+  const selectedRpaAction = ref<RpaAction>("refresh_holdings");
   const accountStatus = ref<"All" | AccountStatus>("All");
   const riskLevel = ref<"All" | RiskLevel>("All");
   const holdingQuery = ref("");
@@ -120,10 +129,21 @@ export const useDashboardStore = defineStore("dashboard", () => {
       strategies.value = payload.strategies.map((item) => ({ ...item }));
       logs.value = payload.logs;
       servers.value = payload.servers;
+      rpaJobs.value = payload.rpaJobs || rpaJobs.value;
       loadState.value = "ready";
+      await refreshRpaJobs();
     } catch (reason) {
       error.value = reason instanceof Error ? reason.message : "Unable to load mock dashboard data.";
       loadState.value = "error";
+    }
+  }
+
+  async function refreshRpaJobs() {
+    try {
+      rpaJobs.value = await fetchBackendRpaJobs();
+      rpaOnline.value = true;
+    } catch {
+      rpaOnline.value = false;
     }
   }
 
@@ -169,6 +189,21 @@ export const useDashboardStore = defineStore("dashboard", () => {
     } catch {
       holding.profile = previousProfile;
       optimisticMessage.value = `${holding.symbol} profile change was rolled back.`;
+    }
+  }
+
+  async function submitRpaJob() {
+    rpaBusy.value = true;
+    try {
+      const job = await submitBackendRpaJob(selectedRpaAccountId.value, selectedRpaAction.value);
+      rpaJobs.value = [job, ...rpaJobs.value.filter((item) => item.id !== job.id)];
+      rpaOnline.value = true;
+      pushLog("info", "rpa-worker", `${job.id} accepted by backend mock RPA queue.`);
+    } catch {
+      rpaOnline.value = false;
+      pushLog("warning", "rpa-worker", "Backend mock RPA API is offline. Start the Python backend to run jobs.");
+    } finally {
+      rpaBusy.value = false;
     }
   }
 
@@ -220,8 +255,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
     pushLog,
     resetDemo,
     riskLevel,
+    refreshRpaJobs,
+    rpaBusy,
+    rpaJobs,
+    rpaOnline,
     saveAdminKey,
     saveProfile,
+    selectedRpaAccountId,
+    selectedRpaAction,
+    submitRpaJob,
     selectedAccountId,
     selectedProfile,
     servers,

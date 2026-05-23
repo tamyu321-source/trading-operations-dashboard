@@ -4,11 +4,14 @@ import {
   type Holding,
   type OpsLog,
   type ProfileVariant,
+  type RpaAction,
+  type RpaJob,
   type StrategyProfile
 } from "./data";
 
 const CACHE_KEY = "trading-ops-dashboard-cache";
 const ADMIN_KEY = "trading-ops-demo-admin-key";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 function cloneDashboard(): DashboardPayload {
   return JSON.parse(JSON.stringify(fallbackDashboard)) as DashboardPayload;
@@ -43,6 +46,31 @@ export async function fetchMockDashboard(): Promise<DashboardPayload> {
   fresh.asOf = new Date().toISOString();
   writeCache(fresh);
   return fresh;
+}
+
+export async function fetchBackendRpaJobs(): Promise<RpaJob[]> {
+  const response = await fetch(`${API_BASE}/api/rpa/jobs`);
+  if (!response.ok) {
+    throw new Error(`RPA jobs API returned HTTP ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { data?: RpaJob[] };
+  return payload.data || [];
+}
+
+export async function submitBackendRpaJob(accountId: string, action: RpaAction): Promise<RpaJob> {
+  const response = await fetch(`${API_BASE}/api/rpa/jobs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accountId, action, operator: "Dashboard Demo" })
+  });
+
+  if (!response.ok) {
+    throw new Error(`RPA job submit API returned HTTP ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { data: RpaJob };
+  return payload.data;
 }
 
 export async function saveStrategyProfile(profile: StrategyProfile): Promise<StrategyProfile> {

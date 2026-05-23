@@ -4,6 +4,8 @@ export type SortDirection = "asc" | "desc";
 export type ServerStatus = "Online" | "Degraded" | "Offline";
 export type LogLevel = "info" | "warning" | "error";
 export type ProfileVariant = "A" | "B";
+export type RpaAction = "refresh_holdings" | "reconcile_cash" | "generate_report";
+export type RpaStatus = "Queued" | "Running" | "Completed" | "Blocked" | "Failed";
 
 export interface Account {
   id: string;
@@ -71,6 +73,21 @@ export interface ServerStatusCard {
   lastHeartbeat: string;
 }
 
+export interface RpaJob {
+  id: string;
+  accountId: string;
+  action: RpaAction;
+  status: RpaStatus;
+  createdAt: string;
+  operator: string;
+  message: string;
+  steps: string[];
+  progress: number;
+  currentStep: string;
+  artifactUrl: string;
+  logs: string[];
+}
+
 export interface DashboardPayload {
   asOf: string;
   accounts: Account[];
@@ -78,6 +95,7 @@ export interface DashboardPayload {
   strategies: StrategyProfile[];
   logs: OpsLog[];
   servers: ServerStatusCard[];
+  rpaJobs?: RpaJob[];
 }
 
 export const demoAccounts: Account[] = [
@@ -253,13 +271,30 @@ export const demoServers: ServerStatusCard[] = [
     lastHeartbeat: "10:18:21"
   },
   {
-    id: "ops-feed",
-    name: "Mock Ops Feed",
-    region: "Simulated",
+    id: "rpa-worker",
+    name: "Mock RPA Worker",
+    region: "Backend queue",
     status: "Degraded",
     latencyMs: 168,
-    queueDepth: 7,
+    queueDepth: 1,
     lastHeartbeat: "10:17:58"
+  }
+];
+
+export const demoRpaJobs: RpaJob[] = [
+  {
+    id: "RPA-3001",
+    accountId: "OPS-001",
+    action: "refresh_holdings",
+    status: "Completed",
+    createdAt: "10:15:08",
+    operator: "Portfolio Reviewer",
+    message: "Mock holdings refresh completed through the backend worker.",
+    steps: ["Validate demo account", "Read sanitized holdings", "Normalize rows", "Write review artifact"],
+    progress: 100,
+    currentStep: "Completed",
+    artifactUrl: "",
+    logs: ["10:15:08 Accepted job", "10:15:09 Normalized 6 holdings", "10:15:10 Wrote mock artifact"]
   }
 ];
 
@@ -300,5 +335,6 @@ export const fallbackDashboard: DashboardPayload = {
   holdings: demoHoldings,
   strategies: demoStrategies,
   logs: demoLogs,
-  servers: demoServers
+  servers: demoServers,
+  rpaJobs: demoRpaJobs
 };

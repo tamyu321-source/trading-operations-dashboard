@@ -205,8 +205,176 @@ nav a:hover {
 }
 
 .flag {
-  font-size: 1rem;
-  line-height: 1;
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 16px;
+  flex: 0 0 24px;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.28);
+}
+
+.flag-uk {
+  background:
+    linear-gradient(33deg, transparent 38%, #ffffff 38% 45%, #c8102e 45% 51%, #ffffff 51% 58%, transparent 58%),
+    linear-gradient(147deg, transparent 38%, #ffffff 38% 45%, #c8102e 45% 51%, #ffffff 51% 58%, transparent 58%),
+    #012169;
+}
+
+.flag-uk .uk-cross::before,
+.flag-uk .uk-cross::after {
+  content: "";
+  position: absolute;
+  background: #ffffff;
+}
+
+.flag-uk .uk-cross::before {
+  inset: 0;
+  top: 6px;
+  height: 4px;
+}
+
+.flag-uk .uk-cross::after {
+  inset: 0;
+  left: 10px;
+  width: 4px;
+}
+
+.flag-uk::before,
+.flag-uk::after {
+  content: "";
+  position: absolute;
+  background: #c8102e;
+  z-index: 1;
+}
+
+.flag-uk::before {
+  left: 0;
+  top: 7px;
+  width: 100%;
+  height: 2px;
+}
+
+.flag-uk::after {
+  left: 11px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.flag-cn {
+  background: #de2910;
+}
+
+.cn-star,
+.cn-star::before,
+.cn-star::after {
+  position: absolute;
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 3px solid transparent;
+  border-bottom: 2px solid #ffde00;
+  border-left: 3px solid transparent;
+  transform: rotate(35deg);
+}
+
+.cn-star::before,
+.cn-star::after {
+  content: "";
+  left: -3px;
+  top: 0;
+}
+
+.cn-star::before {
+  transform: rotate(-70deg);
+}
+
+.cn-star::after {
+  transform: rotate(70deg);
+}
+
+.cn-star.main {
+  left: 4px;
+  top: 4px;
+  transform: scale(1.45) rotate(35deg);
+}
+
+.cn-star.s1 {
+  left: 12px;
+  top: 2px;
+  transform: scale(0.58) rotate(55deg);
+}
+
+.cn-star.s2 {
+  left: 15px;
+  top: 5px;
+  transform: scale(0.58) rotate(25deg);
+}
+
+.cn-star.s3 {
+  left: 15px;
+  top: 9px;
+  transform: scale(0.58) rotate(45deg);
+}
+
+.cn-star.s4 {
+  left: 12px;
+  top: 12px;
+  transform: scale(0.58) rotate(20deg);
+}
+
+.flag-tw {
+  background: #fe0000;
+}
+
+.flag-tw .tw-canton {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 8px;
+  background: #000095;
+}
+
+.flag-tw .tw-canton::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  clip-path: polygon(
+    50% 0,
+    58% 28%,
+    82% 12%,
+    72% 39%,
+    100% 50%,
+    72% 61%,
+    82% 88%,
+    58% 72%,
+    50% 100%,
+    42% 72%,
+    18% 88%,
+    28% 61%,
+    0 50%,
+    28% 39%,
+    18% 12%,
+    42% 28%
+  );
+}
+
+.flag-tw .tw-canton::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #000095;
 }
 
 .topbar p {
@@ -322,6 +490,10 @@ h2 {
 
 .content-grid {
   grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+}
+
+.wide-left {
+  grid-template-columns: minmax(0, 0.85fr) minmax(460px, 1.15fr);
 }
 
 .metric,
@@ -536,6 +708,176 @@ td select,
   font-weight: 800;
 }
 
+.backend-status {
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.backend-status.online {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.backend-status.offline {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rpa-command-bar {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(170px, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.rpa-command-bar label {
+  display: grid;
+  gap: 6px;
+}
+
+.rpa-command-bar label span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.rpa-command-bar select {
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  padding: 9px 10px;
+}
+
+.rpa-command-bar button {
+  min-height: 39px;
+}
+
+.rpa-command-bar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.rpa-note {
+  margin: 12px 0 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.rpa-job-list {
+  display: grid;
+  gap: 10px;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.rpa-job {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.rpa-job strong,
+.rpa-job small {
+  display: block;
+}
+
+.rpa-job p,
+.rpa-progress,
+.rpa-step,
+.rpa-logs,
+.artifact-link {
+  grid-column: 1 / -1;
+}
+
+.rpa-job p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.rpa-status {
+  display: inline-flex;
+  justify-content: center;
+  align-self: start;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.rpa-status.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.rpa-status.queued,
+.rpa-status.running {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.rpa-status.blocked,
+.rpa-status.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rpa-progress {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.rpa-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #10b981, #0284c7);
+  transition: width 0.25s ease;
+}
+
+.rpa-step {
+  color: #0f766e;
+  font-weight: 900;
+}
+
+.rpa-logs {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  background: #12202f;
+  padding: 10px;
+}
+
+.rpa-logs code {
+  color: #dbeafe;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  white-space: normal;
+}
+
+.artifact-link {
+  width: fit-content;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -681,6 +1023,7 @@ td small {
   }
 
   .content-grid,
+  .wide-left,
   .server-grid {
     grid-template-columns: 1fr;
   }
@@ -722,6 +1065,8 @@ td small {
   .account-row,
   .rollup-row,
   .profile-card,
+  .rpa-command-bar,
+  .rpa-job,
   .log-row {
     grid-template-columns: 1fr;
   }

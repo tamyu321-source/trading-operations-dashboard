@@ -9,6 +9,8 @@ RiskLevel = Literal["Low", "Medium", "High"]
 ProfileVariant = Literal["A", "B"]
 ServerStatus = Literal["Online", "Degraded", "Offline"]
 LogLevel = Literal["info", "warning", "error"]
+RpaAction = Literal["refresh_holdings", "reconcile_cash", "generate_report"]
+RpaStatus = Literal["Queued", "Running", "Completed", "Blocked", "Failed"]
 
 
 @dataclass(frozen=True)
@@ -84,3 +86,24 @@ class ServerCard:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+@dataclass
+class RpaJob:
+    id: str
+    accountId: str
+    action: RpaAction
+    status: RpaStatus
+    createdAt: str
+    operator: str
+    message: str
+    steps: list[str]
+    progress: int = 0
+    currentStep: str = "Waiting for scheduler"
+    artifactUrl: str = ""
+    logs: list[str] | None = None
+
+    def to_dict(self) -> dict:
+        data = asdict(self)
+        data["logs"] = data["logs"] or []
+        return data

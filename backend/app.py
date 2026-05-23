@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 
 from .services import TradingOperationsService
 
@@ -47,6 +47,32 @@ def create_app() -> Flask:
     @app.get("/api/servers")
     def servers():
         return jsonify({"data": service.servers()})
+
+    @app.get("/api/rpa/jobs")
+    def rpa_jobs():
+        return jsonify({"data": service.rpa_jobs()})
+
+    @app.post("/api/rpa/jobs")
+    def submit_rpa_job():
+        payload = request.get_json(silent=True) or {}
+        try:
+            job = service.submit_rpa_job(
+                account_id=str(payload.get("accountId", "")),
+                action=str(payload.get("action", "")),
+                operator=str(payload.get("operator") or "Portfolio Reviewer"),
+            )
+            return jsonify({"data": job}), 201
+        except KeyError:
+            return jsonify({"error": "Account was not found"}), 404
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.get("/api/rpa/artifacts/<filename>")
+    def rpa_artifact(filename: str):
+        try:
+            return send_file(service.artifact_path(filename), as_attachment=True)
+        except FileNotFoundError:
+            return jsonify({"error": "Artifact was not found"}), 404
 
     return app
 
